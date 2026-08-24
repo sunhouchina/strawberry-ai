@@ -1,8 +1,10 @@
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any
-from sqlalchemy import Date, DateTime, ForeignKey, JSON, String, Text
+
+from sqlalchemy import JSON, Boolean, Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.db import Base
 
 
@@ -15,7 +17,7 @@ class Farm(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_id)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     region: Mapped[str | None] = mapped_column(String(200))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
 
 class Plot(Base):
@@ -85,8 +87,19 @@ class AuditLog(Base):
     entity_type: Mapped[str] = mapped_column(String(80), nullable=False)
     entity_id: Mapped[str] = mapped_column(String(36), nullable=False)
     action: Mapped[str] = mapped_column(String(80), nullable=False)
+    actor_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+
+
+class User(Base):
+    __tablename__ = "users"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_id)
+    username: Mapped[str] = mapped_column(String(120), unique=True, index=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(String(30), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
 
 class KnowledgeDocument(Base):
@@ -95,5 +108,16 @@ class KnowledgeDocument(Base):
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     source: Mapped[str] = mapped_column(String(300), nullable=False)
     region: Mapped[str | None] = mapped_column(String(200))
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    author_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    submitted_by_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_by_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
     status: Mapped[str] = mapped_column(String(30), default="draft")
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime)
+    rejected_at: Mapped[datetime | None] = mapped_column(DateTime)
+    retired_at: Mapped[datetime | None] = mapped_column(DateTime)
+    review_notes: Mapped[str | None] = mapped_column(Text)
+    status_changed_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)

@@ -1,9 +1,19 @@
+from functools import lru_cache
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+
 from app.config import database_url
 
-engine = create_engine(database_url(), future=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+@lru_cache
+def get_engine():
+    url = database_url()
+    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
+    return create_engine(url, future=True, connect_args=connect_args)
+
+
+SessionLocal = sessionmaker(autoflush=False, autocommit=False)
 
 
 class Base(DeclarativeBase):
@@ -11,7 +21,7 @@ class Base(DeclarativeBase):
 
 
 def get_session():
-    session = SessionLocal()
+    session = SessionLocal(bind=get_engine())
     try:
         yield session
     finally:
