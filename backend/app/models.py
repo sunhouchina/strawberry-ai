@@ -137,3 +137,94 @@ class KnowledgeDocument(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False
     )
+
+
+class SensorReading(Base):
+    __tablename__ = "sensor_readings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_id)
+    crop_cycle_id: Mapped[str] = mapped_column(ForeignKey("crop_cycles.id"), nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    source_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    metric_key: Mapped[str] = mapped_column(String(80), nullable=False)
+    metric_value: Mapped[float] = mapped_column(nullable=False)
+    unit: Mapped[str | None] = mapped_column(String(30))
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+
+class AIDecision(Base):
+    __tablename__ = "ai_decisions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_id)
+    crop_cycle_id: Mapped[str] = mapped_column(ForeignKey("crop_cycles.id"), nullable=False)
+    decision_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    risk_level: Mapped[str] = mapped_column(String(20), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    recommendation_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(30), default="proposed", nullable=False)
+    created_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+
+class WorkOrder(Base):
+    __tablename__ = "work_orders"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_id)
+    crop_cycle_id: Mapped[str] = mapped_column(ForeignKey("crop_cycles.id"), nullable=False)
+    decision_id: Mapped[str | None] = mapped_column(ForeignKey("ai_decisions.id"))
+    domain: Mapped[str] = mapped_column(String(50), nullable=False)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    risk_level: Mapped[str] = mapped_column(String(20), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), default="open", nullable=False)
+    assigned_to_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    due_at: Mapped[datetime | None] = mapped_column(DateTime)
+    requires_review: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    reviewer_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    review_notes: Mapped[str | None] = mapped_column(Text)
+    guardrail_state: Mapped[str] = mapped_column(String(30), default="normal", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+
+class WorkOrderExecution(Base):
+    __tablename__ = "work_order_executions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_id)
+    work_order_id: Mapped[str] = mapped_column(ForeignKey("work_orders.id"), nullable=False)
+    executor_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    execution_mode: Mapped[str] = mapped_column(String(30), nullable=False)
+    executed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    evidence_refs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    result_notes: Mapped[str | None] = mapped_column(Text)
+    anomaly_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+
+class WorkOrderFeedback(Base):
+    __tablename__ = "work_order_feedback"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_id)
+    work_order_id: Mapped[str] = mapped_column(ForeignKey("work_orders.id"), nullable=False)
+    decision_id: Mapped[str | None] = mapped_column(ForeignKey("ai_decisions.id"))
+    metric_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    metric_value: Mapped[float] = mapped_column(nullable=False)
+    unit: Mapped[str | None] = mapped_column(String(30))
+    notes: Mapped[str | None] = mapped_column(Text)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    recorded_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class DomainEvent(Base):
+    __tablename__ = "domain_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_id)
+    entity_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    entity_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
