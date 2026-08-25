@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -993,26 +994,26 @@ def _log_audit(
             action=action,
             payload=json.loads(json.dumps(payload, default=str)),
         )
+    )
 
 
 def _emit_domain_event(
-        session: Session, *, entity_type: str, entity_id: str, event_type: str, payload: dict
+    session: Session, *, entity_type: str, entity_id: str, event_type: str, payload: dict
 ) -> None:
-        session.add(
-            DomainEvent(
-                entity_type=entity_type,
-                entity_id=entity_id,
-                event_type=event_type,
-                payload=json.loads(json.dumps(payload, default=str)),
-            )
-        )
-        _log_audit(
-            session,
+    session.add(
+        DomainEvent(
             entity_type=entity_type,
             entity_id=entity_id,
-            action=event_type,
-            payload=payload,
+            event_type=event_type,
+            payload=json.loads(json.dumps(payload, default=str)),
         )
+    )
+    _log_audit(
+        session,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        action=event_type,
+        payload=payload,
     )
 
 
