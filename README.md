@@ -42,6 +42,15 @@ pytest
 4. 农技员审核中高风险问题；
 5. 通过 `POST /api/v1/farming-records/draft` 生成中文农事描述的可编辑台账草稿，并确认保存。
 
+## 闭环扩展（已实现基础链路）
+
+- `POST /api/v1/sensor-readings`：写入人工/设备感知数据（如基质含水率、EC）。
+- `POST /api/v1/decisions/water-fertilizer`：基于近期传感数据生成水肥建议与风险提示。
+- `POST /api/v1/work-orders/plant-protection`：创建植保工单并按风险自动分级。
+- `POST /api/v1/work-orders/{id}/review`：高风险植保工单需农技员审核后才能执行。
+- `POST /api/v1/work-orders/{id}/executions`：上报人工/设备执行记录与异常信息。
+- `POST /api/v1/work-orders/{id}/feedback`：回传执行效果指标，形成反馈闭环。
+
 ## 已知限制
 
 - 图片仅作为 URL/对象存储引用保存，不做图像识别；
